@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS System - Hugging Face Models</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+
+        .control-group h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+        }
+
+        .range-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .range-group input[type="range"] {
+            flex: 1;
+        }
+
+        .range-value {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .text-input-section {
+            margin-bottom: 30px;
+        }
+
+        .text-input-section textarea {
+            min-height: 150px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .audio-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px dashed #dee2e6;
+        }
+
+        .audio-player {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .model-info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #0c5460;
+        }
+
+        @media (max-width: 768px) {
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ Simple TTS System</h1>
+            <p>Convert text to speech using Google Text-to-Speech (gTTS)</p>
+        </div>
+
+        <div id="statusMessage" class="status-message" style="display: none;"></div>
+
+        <div class="controls-grid">
+            <div class="control-group">
+                <h3>🤖 Model Settings</h3>
+                <div class="form-group">
+                    <label for="modelSelect">TTS Model:</label>
+                    <select id="modelSelect">
+                        <option value="microsoft/speecht5_tts">SpeechT5 TTS (Microsoft)</option>
+                        <option value="facebook/fastspeech2-en-ljspeech">FastSpeech2 (Facebook)</option>
+                        <option value="espnet/kan-bayashi_ljspeech_vits">VITS (ESPnet)</option>
+                        <option value="suno/bark">Bark (Suno)</option>
+                        <option value="facebook/mms-tts-eng">MMS TTS (Facebook)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="voiceSelect">Voice:</label>
+                    <select id="voiceSelect">
+                        <option value="default">Default Voice</option>
+                        <option value="female1">Female Voice 1</option>
+                        <option value="male1">Male Voice 1</option>
+                        <option value="neutral">Neutral Voice</option>
+                    </select>
+                </div>
+                <div class="model-info" id="modelInfo">
+                    High quality Microsoft SpeechT5 model with natural speech synthesis
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>🎛️ Audio Settings</h3>
+                <div class="form-group">
+                    <label for="speedRange">Speech Speed:</label>
+                    <div class="range-group">
+                        <input type="range" id="speedRange" min="0.5" max="2.0" step="0.1" value="1.0">
+                        <span class="range-value" id="speedValue">1.0x</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="pitchRange">Pitch:</label>
+                    <div class="range-group">
+                        <input type="range" id="pitchRange" min="0.5" max="2.0" step="0.1" value="1.0">
+                        <span class="range-value" id="pitchValue">1.0x</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="languageSelect">Language:</label>
+                    <select id="languageSelect">
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-input-section">
+            <label for="textInput">📝 Enter text to convert to speech:</label>
+            <textarea 
+                id="textInput" 
+                placeholder="Type your text here... For example: 'Hello! This is a demonstration of our text-to-speech system powered by Hugging Face models.'"
+            ></textarea>
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-primary" id="generateBtn">
+                <span id="generateIcon">🎵</span>
+                <span id="generateText">Generate Speech</span>
+            </button>
+            <button class="btn btn-secondary" id="clearBtn">
+                🗑️ Clear Text
+            </button>
+        </div>
+
+        <div class="audio-section" id="audioSection">
+            <div id="audioPlaceholder">
+                <h3>🔊 Generated audio will appear here</h3>
+                <p>Enter text above and click "Generate Speech" to create audio</p>
+            </div>
+            <div id="audioPlayer" class="audio-player" style="display: none;">
+                <audio id="audioElement" controls style="width: 100%; margin-bottom: 15px;"></audio>
+                <div class="button-group">
+                    <button class="btn btn-secondary" id="downloadBtn">
+                        💾 Download Audio
+                    </button>
+                    <button class="btn btn-secondary" id="shareBtn">
+                        📤 Share
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TTSSystem {
+            constructor() {
+                this.initializeElements();
+                this.setupEventListeners();
+                this.updateModelInfo();
+            }
+
+            initializeElements() {
+                this.textInput = document.getElementById('textInput');
+                this.modelSelect = document.getElementById('modelSelect');
+                this.voiceSelect = document.getElementById('voiceSelect');
+                this.speedRange = document.getElementById('speedRange');
+                this.pitchRange = document.getElementById('pitchRange');
+                this.languageSelect = document.getElementById('languageSelect');
+                this.generateBtn = document.getElementById('generateBtn');
+                this.clearBtn = document.getElementById('clearBtn');
+                this.audioSection = document.getElementById('audioSection');
+                this.audioPlaceholder = document.getElementById('audioPlaceholder');
+                this.audioPlayer = document.getElementById('audioPlayer');
+                this.audioElement = document.getElementById('audioElement');
+                this.downloadBtn = document.getElementById('downloadBtn');
+                this.shareBtn = document.getElementById('shareBtn');
+                this.statusMessage = document.getElementById('statusMessage');
+                this.modelInfo = document.getElementById('modelInfo');
+                this.speedValue = document.getElementById('speedValue');
+                this.pitchValue = document.getElementById('pitchValue');
+                this.generateIcon = document.getElementById('generateIcon');
+                this.generateText = document.getElementById('generateText');
+            }
+
+            setupEventListeners() {
+                this.generateBtn.addEventListener('click', () => this.generateSpeech());
+                this.clearBtn.addEventListener('click', () => this.clearText());
+                this.downloadBtn.addEventListener('click', () => this.downloadAudio());
+                this.shareBtn.addEventListener('click', () => this.shareAudio());
+                
+                this.modelSelect.addEventListener('change', () => this.updateModelInfo());
+                this.speedRange.addEventListener('input', () => this.updateSpeedValue());
+                this.pitchRange.addEventListener('input', () => this.updatePitchValue());
+                
+                this.textInput.addEventListener('input', () => this.validateInput());
+            }
+
+            updateModelInfo() {
+                const modelDescriptions = {
+                    'microsoft/speecht5_tts': 'High quality Microsoft SpeechT5 model with natural speech synthesis',
+                    'facebook/fastspeech2-en-ljspeech': 'Fast and efficient speech synthesis optimized for speed',
+                    'espnet/kan-bayashi_ljspeech_vits': 'End-to-end neural speech synthesis with VITS architecture',
+                    'suno/bark': 'Advanced model capable of realistic speech with emotions and effects',
+                    'facebook/mms-tts-eng': 'Multilingual speech synthesis supporting 100+ languages'
+                };
+                
+                this.modelInfo.textContent = modelDescriptions[this.modelSelect.value];
+            }
+
+            updateSpeedValue() {
+                this.speedValue.textContent = this.speedRange.value + 'x';
+            }
+
+            updatePitchValue() {
+                this.pitchValue.textContent = this.pitchRange.value + 'x';
+            }
+
+            validateInput() {
+                const hasText = this.textInput.value.trim().length > 0;
+                this.generateBtn.disabled = !hasText;
+            }
+
+            showStatus(message, type = 'info') {
+                this.statusMessage.textContent = message;
+                this.statusMessage.className = `status-message status-${type}`;
+                this.statusMessage.style.display = 'block';
+                
+                if (type === 'success' || type === 'error') {
+                    setTimeout(() => {
+                        this.statusMessage.style.display = 'none';
+                    }, 5000);
+                }
+            }
+
+            async generateSpeech() {
+                const text = this.textInput.value.trim();
+                
+                if (!text) {
+                    this.showStatus('Please enter some text to convert to speech', 'error');
+                    return;
+                }
+
+                if (text.length > 1000) {
+                    this.showStatus('Text is too long. Please keep it under 1000 characters.', 'error');
+                    return;
+                }
+
+                this.setGeneratingState(true);
+                this.showStatus('Generating speech... This may take a few seconds.', 'info');
+
+                try {
+                    // Simulate API call to Hugging Face
+                    const response = await this.callTTSAPI({
+                        text: text,
+                        model: this.modelSelect.value,
+                        voice: this.voiceSelect.value,
+                        speed: parseFloat(this.speedRange.value),
+                        pitch: parseFloat(this.pitchRange.value),
+                        language: this.languageSelect.value
+                    });
+
+                    if (response.success) {
+                        this.displayAudio(response.audioUrl, response.audioId);
+                        if (response.demo) {
+                            this.showStatus('Demo mode: Backend not connected. Showing sample audio. 🎵', 'info');
+                        } else {
+                            this.showStatus('Speech generated successfully! 🎉', 'success');
+                        }
+                    } else {
+                        throw new Error(response.error || 'Failed to generate speech');
+                    }
+                } catch (error) {
+                    console.error('TTS Generation Error:', error);
+                    this.showStatus(`Error: ${error.message}`, 'error');
+                } finally {
+                    this.setGeneratingState(false);
+                }
+            }
+
+            async callTTSAPI(params) {
+                try {
+                    // Make API call to gTTS Flask backend
+                    const response = await fetch('http://localhost:5000/api/tts/generate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            text: params.text,
+                            language: params.language,
+                            voice: params.voice,
+                            speed: params.speed
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to generate speech');
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // Get the audio file URL
+                        const audioUrl = `http://localhost:5000/api/tts/stream/${result.audio_id}`;
+                        return { 
+                            success: true, 
+                            audioUrl: audioUrl, 
+                            audioId: result.audio_id,
+                            duration: result.duration,
+                            service: result.service
+                        };
+                    } else {
+                        throw new Error(result.error || 'Unknown error occurred');
+                    }
+                } catch (error) {
+                    console.error('API Error:', error);
+                    
+                    // Fallback to demo mode if backend is not available
+                    if (error.message.includes('fetch') || error.name === 'TypeError') {
+                        // Backend not available, create demo audio
+                        return this.createDemoAudio(params);
+                    }
+                    
+                    throw error;
+                }
+            }
+
+            createDemoAudio(params) {
+                return new Promise((resolve) => {
+                    // Create simple synthetic audio for demo
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const sampleRate = audioContext.sampleRate;
+                    const duration = Math.min(params.text.length * 0.08, 8);
+                    const frameCount = sampleRate * duration;
+                    const arrayBuffer = audioContext.createBuffer(1, frameCount, sampleRate);
+                    const channelData = arrayBuffer.getChannelData(0);
+                    
+                    // Generate speech-like audio
+                    for (let i = 0; i < frameCount; i++) {
+                        const t = i / sampleRate;
+                        const frequency = 150 + Math.sin(t * 3) * 80;
+                        const envelope = Math.exp(-t * 0.3) * (1 - Math.exp(-t * 10));
+                        channelData[i] = Math.sin(frequency * 2 * Math.PI * t) * 0.15 * envelope;
+                    }
+
+                    const offlineContext = new OfflineAudioContext(1, frameCount, sampleRate);
+                    const source = offlineContext.createBufferSource();
+                    source.buffer = arrayBuffer;
+                    source.connect(offlineContext.destination);
+                    source.start();
+                    
+                    offlineContext.startRendering().then(renderedBuffer => {
+                        const blob = this.audioBufferToBlob(renderedBuffer);
+                        const audioUrl = URL.createObjectURL(blob);
+                        resolve({ success: true, audioUrl: audioUrl, demo: true });
+                    });
+                });
+            }
+
+            audioBufferToBlob(buffer) {
+                const numberOfChannels = buffer.numberOfChannels;
+                const sampleRate = buffer.sampleRate;
+                const format = 1; // PCM
+                const bitDepth = 16;
+                
+                const bytesPerSample = bitDepth / 8;
+                const blockAlign = numberOfChannels * bytesPerSample;
+                const byteRate = sampleRate * blockAlign;
+                const dataSize = buffer.length * blockAlign;
+                const bufferSize = 44 + dataSize;
+                
+                const arrayBuffer = new ArrayBuffer(bufferSize);
+                const view = new DataView(arrayBuffer);
+                
+                const writeString = (offset, string) => {
+                    for (let i = 0; i < string.length; i++) {
+                        view.setUint8(offset + i, string.charCodeAt(i));
+                    }
+                };
+                
+                // WAV header
+                writeString(0, 'RIFF');
+                view.setUint32(4, bufferSize - 8, true);
+                writeString(8, 'WAVE');
+                writeString(12, 'fmt ');
+                view.setUint32(16, 16, true);
+                view.setUint16(20, format, true);
+                view.setUint16(22, numberOfChannels, true);
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, byteRate, true);
+                view.setUint16(32, blockAlign, true);
+                view.setUint16(34, bitDepth, true);
+                writeString(36, 'data');
+                view.setUint32(40, dataSize, true);
+                
+                // Convert audio data
+                const channelData = buffer.getChannelData(0);
+                let offset = 44;
+                for (let i = 0; i < channelData.length; i++) {
+                    const sample = Math.max(-1, Math.min(1, channelData[i]));
+                    view.setInt16(offset, sample * 0x7FFF, true);
+                    offset += 2;
+                }
+                
+                return new Blob([arrayBuffer], { type: 'audio/wav' });
+            }
+
+            setGeneratingState(isGenerating) {
+                this.generateBtn.disabled = isGenerating;
+                if (isGenerating) {
+                    this.generateIcon.innerHTML = '<div class="loading"></div>';
+                    this.generateText.textContent = 'Generating...';
+                } else {
+                    this.generateIcon.textContent = '🎵';
+                    this.generateText.textContent = 'Generate Speech';
+                }
+            }
+
+            displayAudio(audioUrl, audioId = null) {
+                this.audioElement.src = audioUrl;
+                this.audioPlaceholder.style.display = 'none';
+                this.audioPlayer.style.display = 'block';
+                this.currentAudioUrl = audioUrl;
+                this.currentAudioId = audioId;
+            }
+
+            clearText() {
+                this.textInput.value = '';
+                this.audioPlaceholder.style.display = 'block';
+                this.audioPlayer.style.display = 'none';
+                this.statusMessage.style.display = 'none';
+                this.validateInput();
+            }
+
+            downloadAudio() {
+                if (this.currentAudioUrl) {
+                    // Check if this is a real backend-generated audio or demo
+                    if (this.currentAudioId && !this.currentAudioUrl.includes('blob:')) {
+                        // Use backend download endpoint
+                        const downloadUrl = `http://localhost:5000/api/tts/download/${this.currentAudioId}`;
+                        const a = document.createElement('a');
+                        a.href = downloadUrl;
+                        a.download = `tts-audio-${Date.now()}.wav`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    } else {
+                        // Download demo/blob audio
+                        const a = document.createElement('a');
+                        a.href = this.currentAudioUrl;
+                        a.download = `tts-demo-${Date.now()}.wav`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    }
+                    this.showStatus('Audio download started!', 'success');
+                }
+            }
+
+            shareAudio() {
+                if (navigator.share && this.currentAudioUrl) {
+                    fetch(this.currentAudioUrl)
+                        .then(res => res.blob())
+                        .then(blob => {
+                            const file = new File([blob], 'tts-audio.wav', { type: 'audio/wav' });
+                            return navigator.share({
+                                title: 'Generated Speech',
+                                text: 'Check out this TTS generated audio!',
+                                files: [file]
+                            });
+                        })
+                        .catch(err => console.log('Error sharing:', err));
+                } else {
+                    // Fallback: copy link
+                    navigator.clipboard.writeText(window.location.href).then(() => {
+                        this.showStatus('Link copied to clipboard!', 'success');
+                    });
+                }
+            }
+        }
+
+        // Initialize the TTS system when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new TTSSystem();
+        });
+    </script>
+</body>
+</html>
